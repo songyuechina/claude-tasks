@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir:*)",
+      "Bash(python:*)",
+      "Bash(powershell -Command:*)",
+      "Bash(timeout /t 3)",
+      "Bash(/bashes)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

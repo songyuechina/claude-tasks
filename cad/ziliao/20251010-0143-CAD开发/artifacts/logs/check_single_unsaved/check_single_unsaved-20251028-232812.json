@@ -1,0 +1,45 @@
+{
+  "open_before": [
+    "00.dwg",
+    "00.dwg",
+    "00.dwg",
+    "01.dwg",
+    "01.dwg",
+    "01.dwg",
+    "01.dwg",
+    "01.dwg",
+    "01.dwg",
+    "01.dwg",
+    "00.dwg",
+    "01.dwg",
+    "00.dwg",
+    "01.dwg",
+    "00.dwg",
+    "01.dwg",
+    "00.dwg",
+    "01.dwg",
+    "00.dwg",
+    "01.dwg",
+    "01.dwg",
+    "01.dwg",
+    "01.dwg",
+    "01.dwg",
+    "01.dwg",
+    "01.dwg",
+    "01.dwg",
+    "01.dwg",
+    "01.dwg",
+    "01.dwg",
+    "01.dwg"
+  ],
+  "open_after": [
+    "01.dwg"
+  ],
+  "returned_name": "01.dwg",
+  "verdict": "PASS",
+  "errors": [],
+  "checkpoints": [
+    "start",
+    "finished"
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python:*)",
+      "Bash(tasklist:*)",
+      "Bash(findstr:*)",
+      "Bash(dir:*)",
+      "Bash(taskkill:*)",
+      "Bash(nul)",
+      "Bash(copy:*)",
+      "Bash(cmd /c copy /Y \"D:\\claude-tasks\\Function_testing\\insert_tarch_window.dwg\" \"D:\\claude-tasks\\Function_testing\\insert_tarch_window-1.dwg\")",
+      "Bash(cmd /c copy /Y \"D:\\claude-tasks\\Function_testing\\insert_tarch_window.dwg\" \"D:\\claude-tasks\\Function_testing\\insert_tarch_window-2.dwg\")",
+      "Bash(cmd /c dir:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

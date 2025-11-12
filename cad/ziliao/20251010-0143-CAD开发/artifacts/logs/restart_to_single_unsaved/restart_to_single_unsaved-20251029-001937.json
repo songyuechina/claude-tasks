@@ -1,0 +1,13 @@
+{
+  "tarch_root": "C:\\Tangent\\TArchT20V9",
+  "active": "",
+  "open": [
+    "Drawing1.dwg"
+  ],
+  "verdict": "FAIL",
+  "errors": [],
+  "checkpoints": [
+    "start",
+    "finished"
+  ]
+}

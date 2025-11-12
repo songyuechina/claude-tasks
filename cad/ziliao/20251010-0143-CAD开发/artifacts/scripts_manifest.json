@@ -1,0 +1,36 @@
+{
+  "scripts": [
+    {
+      "path": "cad_cli.py",
+      "id": "cad_cli",
+      "name": "CAD CLI Entrypoint",
+      "description": "启动/关闭CAD、DWG管理、基本操作（画线）、标准化状态",
+      "commands": "start, stop, open, list, close, save, saveas, line, start-open, standard",
+      "usage": "python cad_cli.py <command> [args]"
+    },
+    {
+      "path": "scripts/layer_split_and_hatch.py",
+      "id": "layer_split_and_hatch",
+      "name": "Split By Layer And Hatch Groups",
+      "description": "针对一个 DWG：按图层拆分为多个文件；在每个文件中，查找封闭多段线，基于“最多两层包含”分组后做实体填充（SOLID）。",
+      "commands": "",
+      "usage": "python scripts/layer_split_and_hatch.py [<source_dwg>]"
+    },
+    {
+      "path": "scripts/test_flow.py",
+      "id": "test_flow",
+      "name": "CAD Smoke Test",
+      "description": "以标准化状态启动CAD，打开/保存/画线并列出DWG",
+      "commands": "",
+      "usage": "python scripts/test_flow.py"
+    },
+    {
+      "path": "scripts/verify_path_open.py",
+      "id": "verify_path_open",
+      "name": "Verify Path And Open DWG",
+      "description": "校验本地DWG路径（含中文/特殊字符）是否存在，并尝试用CadController打开",
+      "commands": "",
+      "usage": "python scripts/verify_path_open.py <absolute_dwg_path>"
+    }
+  ]
+}

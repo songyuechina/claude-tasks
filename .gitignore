@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.class
+*.so
+.Python
+env/
+venv/
+*.egg-info/
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# CAD
+*.dwg.bak
+*.dwl
+*.dwl2
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+nul

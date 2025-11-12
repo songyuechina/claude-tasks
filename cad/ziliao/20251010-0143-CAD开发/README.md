@@ -1,0 +1,2 @@
+﻿Docs index: 统一规范入口 → docs/INDEX.md（CONCEPTS / COORDINATION / OPEN_POLICY / OPERATIONS / TOOLS）。
+

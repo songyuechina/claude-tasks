@@ -1,0 +1,10 @@
+﻿{
+  "name": "<slug>",
+  "steps": [
+    { "name": "edit SPEC.md", "status": "pending", "run": [] },
+    { "name": "bootstrap project", "status": "pending", "run": [] },
+    { "name": "implement core logic", "status": "pending", "run": [] },
+    { "name": "validate per Acceptance criteria", "status": "pending", "run": [] },
+    { "name": "package deliverables", "status": "pending", "run": [] }
+  ]
+}

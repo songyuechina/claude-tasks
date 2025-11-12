@@ -1,0 +1,77 @@
+{
+  "name": "CAD Development Workstation",
+  "version": "1.0",
+  "description": "CAD 自动化开发和测试工作站",
+
+  "behavior": {
+    "mode": "cad_automation",
+    "strict_compliance": true,
+    "auto_read_docs": true
+  },
+
+  "required_docs": [
+    "CAD_操作规范.md",
+    "CAD_基本操作范式.md",
+    "CAD_快速参考.md"
+  ],
+
+  "trigger_keywords": [
+    "CAD", "AutoCAD", "天正", "TArch",
+    "DWG", "图纸", "dwg",
+    "打开", "新建", "关闭", "保存",
+    "插入", "块", "block",
+    "墙体", "门", "窗", "标注",
+    "测试", "test", "脚本"
+  ],
+
+  "mandatory_rules": {
+    "cad_startup": "必须通过天正软件启动 CAD: C:/Tangent/TArchT20V9/TGStart.exe",
+    "dialog_killer": "必须启动弹窗治理脚本: scripts/cad_dialog_killer.py",
+    "coordination": "必须使用协同机制: wait_quiescent() + send_cmd_with_sync()",
+    "paradigm_functions": "必须使用范式函数，禁止直接调用 COM API",
+    "logging": "所有操作必须有详细日志输出"
+  },
+
+  "forbidden_actions": [
+    "直接启动 acad.exe",
+    "直接调用 acad.Documents.Open()",
+    "快速连续发送多个命令",
+    "不等待命令完成",
+    "不启动弹窗治理"
+  ],
+
+  "default_modules": {
+    "basic_operations": "CAD_basic_operations",
+    "coordination": "CAD_coordination",
+    "enhanced_functions": "CAD_enhanced_functions",
+    "test_framework": "CAD_test_framework"
+  },
+
+  "paths": {
+    "workspace": "D:/claude-tasks",
+    "scripts": "D:/claude-tasks/scripts",
+    "tests": "D:/claude-tasks/tests",
+    "docs": "D:/claude-tasks",
+    "tangent": "C:/Tangent/TArchT20V9/TGStart.exe"
+  },
+
+  "permissions": {
+    "full_access": [
+      "D:/claude-tasks",
+      "C:/Users/Administrator/AppData/Roaming/SketchUp/SketchUp 2022/SketchUp/Plugins"
+    ],
+    "full_access_note": "在这些目录下可以对文件夹和文件进行任何操作，不需要中间询问用户确认，直到完成下达的任务",
+    "read_only": [
+      "*"
+    ],
+    "ask_before_modify": true,
+    "ask_before_modify_note": "仅适用于 full_access 之外的区域"
+  },
+
+  "testing": {
+    "framework": "CAD_test_framework.py",
+    "principles_count": 8,
+    "auto_recovery": true,
+    "detailed_logging": true
+  }
+}

@@ -1,0 +1,11 @@
+<任务>
+
+我希望在D:\claude-tasks下分别建立cad、su、wenben、video四个文件夹，分别针对cad、su、wenben、video进行程序开发。目前D:\claude-tasks的内容其实都是针对cad的，适合移动到
+D:\claude-tasks\cad.重新在D:\claude-tasks下分别建立su、wenben、video的独立文件夹。我们将在各个文件夹进行独立又可能有关联的开发。
+我在 https://github.com/ 的邮箱是570346854@qq.com,用户名似乎是songyuechina或songyue。登录密码是sy1234567SY。将D:\claude-tasks下的内容都git到github仓库。确保整个项目是
+claude-tasks，子项目是cad、su、wenben、video。确保能同时在各个子项目操作claude开发不相互干扰，必要的时候互相查阅引用。交叉相关的部分，即同时牵涉到cad,su,img,video的脚本放在单独的
+D:\claude-tasks\zonghe。根据这个设想调整目前D:\claude-tasks下所有内容，修改文件夹移动引起的函数和脚本相关部分的内容。
+
+
+
+<完成任务后统一给我汇报>
