@@ -709,6 +709,50 @@ python D:\claude-tasks\cad\tests\generate_excel_report.py
 
 **超过预期时间2倍以上需要优化。**
 
+### 7.5 函数测试命令手册
+
+**完整手册位置**：`D:/claude-tasks/cad/函数测试命令手册.md`
+
+每个CAD_file_operations.py函数都有详细的测试说明：
+- ✅ 测试命令（直接可运行）
+- ✅ 预备测试文件位置
+- ✅ 文件内容说明
+- ✅ 预期测试结果
+- ✅ 是否需要手动打开CAD（答案：不需要！）
+
+**快速查找**：
+```bash
+# 查看完整测试命令手册
+cat D:\claude-tasks\cad\函数测试命令手册.md
+
+# 或直接在编辑器中打开
+D:\claude-tasks\cad\函数测试命令手册.md
+```
+
+**示例**（insert_region_from_file函数）：
+```bash
+# 测试命令
+python D:\claude-tasks\cad\tests\test_insert_region_from_file_optimized.py
+
+# 预备文件
+D:/claude-tasks/cad/tests/test_files/preset/preset_region_source.dwg
+
+# 文件内容
+- 矩形（10,10到90,90）[在区域内]
+- 圆形（250,50）[在区域外]
+- 三角形 [在区域内]
+
+# 预期结果
+在(150,150)位置有矩形和三角形，没有圆形
+```
+
+**使用流程**：
+1. 打开函数测试命令手册.md
+2. 找到要测试的函数
+3. 复制测试命令
+4. 在命令行直接运行（无需手动打开CAD）
+5. 查看测试结果文件
+
 ---
 
 ## 八、自动化工具
