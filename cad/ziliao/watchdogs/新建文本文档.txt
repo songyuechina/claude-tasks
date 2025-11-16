@@ -1,0 +1,8 @@
+
+cd/d D:\Myprogramsystem\XT\Basic_service_processing\watchdogs
+python inject_continue_windows.py --title "CAD脚本测试" --idle-seconds 300 --message 继续
+
+
+python inject_continue_windows.py --pid 17008 --idle-seconds 300 --message 继续深入思考完成任务
+
+比窗口更可靠

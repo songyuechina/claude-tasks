@@ -1,0 +1,83 @@
+def compute_line_angle(line):#按绘制顺序度量线段角度
+def draw_point(pt):
+def draw_line(p1, p2):#从两点坐标返回直线段
+def draw_circle(center, radius):
+def draw_regular_polygon(center, radius, sides):
+def prioritize_horizontal(lines, tol=0.5):
+def get_spline_length_by_conversion(spline_entity):#返回样条曲线的长度（按默认10分断拟合）
+def estimate_ellipse_length(ellipse):#返回椭圆长度
+def get_entity_geometry_info(obj):#返回图形关键几何信息
+def points_on_line_at_distance_3d(
+def find_fake_intersection_regions(lines, tol=10, real_tol=0.01):
+def lines_daduan(start_point,end_point):#全部脚本统一采用三维坐标点模式
+def delete_duplicate_lines(lines, tol=0.01):
+def delete_redundant_lines(lines, tol=0.01):
+def find_isolated_intersections(LB, tol=0.5):
+def get_inner_point_of_polygon(polygon: Polygon):
+def get_room_outline_from_point(x, y, z=0):## 获取输入点所在房间的轮廓
+def connect_lines_to_polyline_if_closed(lines, tol=0.5):##判断一组闭合直线段是否构成封闭多段线，是就返回PL复线
+def is_closed_polygon_from_lines(lines, tol=0.5):##判断一组闭合直线段是否构成封闭多段线，不返回PL复线
+def same_point(p1, p2, tol=0.5):
+def same_line(ln1, ln2, tol=0.5):
+def calculate_absolute_angle(line, P, tol=0.5):
+def calculate_relative_angle(line, P, current_line, tol=0.5):
+def find_lines_angle(lines, P, tol=0.5):
+def find_lines_sharing_point(lines, P, current_line, tol=0.5):
+def find_successor_line_max(current_line, lines, P, tol=0.5):
+def find_rightbottom_point(lines, tol=0.5):
+def find_rightbottom_closed_polygon(lines, tol=0.5, max_steps=50):
+def draw_polygon_as_polyline(polygon, layer_name="测试辅助", tol=0.5):
+def is_nearly_equal(p1, p2, tol):
+def find_successor_line_min(current_line, lines, P, tol=0.5):
+def get_outer_contour(lines, tol=0.5, max_steps=50):
+def deduplicate_vertices(vertices, tol=0.5):
+def analyze_polygon_branches(PL, lines, p1, tol=0.5):
+def remove_lines_in_LBv(lines, LB_v, tol=0.1):
+def process_polygons(lines, tol=0.5, max_steps=50, layer_name="测试辅助"):
+def extract_polygon_from_lines(lines, tol=0.5):
+def explode_polylines(LB):
+def subtract_line_sets(lines1, lines2, tol=0.5):
+def process_final(lines, tol=0.5, max_steps=50, layer_name="测试辅助"):
+def draw_lwpolyline(
+def get_unique_vertices_from_pl_com(pl_com):
+def convert_lines_to_points(segments):
+def merge_segments_new(LB, tol=0.5):
+def draw_polyline(vertices,
+def lines_to_polylines(Lc,
+def find_min_point(obj):
+def find_max_point(obj):
+def distance(point1, point2):
+def remove_duplicate_polylines(LB_1):
+def define_rectangle_by_diagonal(p1, p2):
+def define_rectangle_by_diagonal_x(p1, p2):
+def expand_rectangle(p1, p2, offset=130):
+def parse_rectangle_points(*args):
+def generate_name_and_ratio_from_polyline(comobj,A3dy=0,Fandy=("ISO_A3_(420.00_x_297.00_MM)","0:0","A3"),tol=10):
+def generate_name_and_ratio_from_com(
+def generate_name_and_ratio_from_com(
+def polyline_sort(polyline_list):
+def plcom_to_coor(plines):
+def plcoor_to_com(coord_info, layer_name="测试辅助", width=0, color=256):
+def panduan_shuxiangkuang(polyline):
+def tongyi_tufu(LB,TFname):
+def simplify_polygon(poly, tol=0.5):
+def normalize_polygon(polygon):
+def get_adjacent_points(polygon, p):
+def point_in_polygon(pt, polygon):
+def line_segment_intersection_2d(p, d, a, b, tol=1e-8):
+def get_auxiliary_point(p, p_prev, p_next, polygon, tol=1e-8):
+def concavity_measure(p, p_prev, p_next, q):
+def concavity_angle(p, polygon):
+def split_orthogonal_hexagon(polygon, tol=0.1):#水平分割
+def split_orthogonal_hexagon_vertical(polygon, tol=0.1):#竖向分割
+def area_of(verts):
+def split_hexagon_combined(polygon, tol=0.1, simplify_tol=0.5):# 合理分割PL正交六边形
+def get_bbox_edge_segments(pl, tol=0.5):
+def get_texts_in_polyline(com_pl, tol=0.5):
+def TDbMText_content(comobj):
+def distribute_points_on_entity(entity, n, block, scale_factor, ys):
+def is_segment_contained(seg_a, seg_b, tol=1e-4):
+def common_segments_between_polylines(pl1, pl2, tol=0.5):
+def is_rect_inside_rect(rect_outer, rect_inner, tol=1e-6):
+def two_plines_making_rectangle(pl1, pl2, tol=0.5):#
+def are_all_vertices_inside(pl1, pl2):

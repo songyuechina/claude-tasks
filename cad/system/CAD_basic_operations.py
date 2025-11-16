@@ -325,7 +325,7 @@ def close_current_dwg_paradigm(save_option: str = "prompt") -> bool:
             print(f"[警告] 不保存关闭: {doc_name}")
         else:
             # 提示保存(默认)
-            print(f"📝 提示保存: {doc_name}")
+            print(f"[提示] 提示保存: {doc_name}")
 
         # 4. 执行关闭命令
         success = send_cmd_with_sync("_CLOSE\n", wait_after=1.0, timeout=30.0)

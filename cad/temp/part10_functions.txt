@@ -1,0 +1,8 @@
+14395: def sc_objs_to_layer(layer_name,cl=256):
+14444: def create_layers_from_list(layer_names):
+14473: def delete_layers_from_list(layer_names):
+14514: def dim_by_points(*args):
+14557: def ensure_layer(layer_name="jizhunwall"):
+14609: def ensure_layer_current(layer_name="jizhunwall", max_retries=3):
+14636: def set_layer_properties(layer_name, color_index=9, linetype="Continuous", on=True, frozen=False):
+14682: def set_layer_with_retry(LB, layername, ci=3):

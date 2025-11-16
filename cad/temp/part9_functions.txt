@@ -1,0 +1,27 @@
+13315: def huoqukuai_shuxing_zhi(XX):#XX为属性块实体
+13337: def set_attributes_values(block, tags_order, new_values):
+13384: def resize_block_attribute(block_ref, tag: str, *, height: float = 200.0, width: float = 4500.0):
+13460: def huoqu_kuai_pl(blocka):#输入实体块，得到实体块中多段线矩形的坐标，其坐标以插入点的定义点为原点
+13491: def create_block_with_basepoint():
+13508: def create_block_with_triangle_and_text():
+13533: def huoqu_kuai_pl(blocka):
+13558: def get_bounding_box_of_block(block_name):
+13588: def create_new_block_with_insert_and_line():
+13615: def copy_and_move_blocks_from_layer(layer_name, block_prefix):
+13640: def delete_block_name(block_name):#先删除块名为block_name的实体再执行该命令删除块名，免得将来发生替换警告
+13670: def rename_block_entity(ent, new_name):
+13697: def get_block_instances(block_name: str, max_retries: int = 5):
+13736: def get_entities_from_block_reference(block_ref):
+13764: def insert_block_into_autocad(block_file_path, insertion_point=(0, 0, 0), scale=(1, 1, 1), rotation=0):
+13790: def insert_standard_block(block_dwg,
+13864: def insert_and_explode_dwg(block_dwg,
+13956: def safe_explode_and_delete(bk, ci=3, delay=1.0):
+14014: def get_large_block_instances(
+14073: def get_large_block_instances_with_tolerance(max_retries: int = 5, area_threshold: float = 70 ):
+14114: def transform_point_by_block(block_ref, local_pt):
+14149: def select_block_by_name(block_name: str, max_retries: int = 5):
+14184: def get_all_block_definitions(doc=None):
+14211: def purge_block(block_name: str, quiet: bool = False):
+14268: def purge_unused_blocks(quiet: bool = False):
+14308: def get_selected_blockreference_names():
+14338: def delete_layer(layername: str):

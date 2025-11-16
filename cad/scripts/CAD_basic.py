@@ -681,7 +681,7 @@ def current_dwg_folder():
         return None
 
 
-#&&% 基础函数
+#&&% 数据类型转换函数
 
 
 def vtpnt(x, y, z):
@@ -754,15 +754,28 @@ def start_applicationV9(
             print("[启动] 启动天正CAD 成功")
 
             # 启动 cad_dialog_killer.py
-            killer_script = os.path.join(os.path.dirname(__file__), "cad_dialog_killer.py")
-            try:
-                subprocess.Popen(
-                    [sys.executable, killer_script],
-                    creationflags=subprocess.CREATE_NO_WINDOW
-                )
-                print("[启动] cad_dialog_killer 已启动")
-            except Exception as e:
-                print(f"[警告] cad_dialog_killer 启动失败: {e}")
+            script_dir = os.path.dirname(os.path.dirname(__file__))  # 返回到cad目录
+            killer_script = os.path.join(script_dir, "system", "cad_dialog_killer.py")
+
+            if not os.path.exists(killer_script):
+                print(f"[错误] 弹窗治理脚本不存在: {killer_script}")
+            else:
+                try:
+                    killer_proc = subprocess.Popen(
+                        [sys.executable, killer_script],
+                        creationflags=subprocess.CREATE_NO_WINDOW
+                    )
+                    print(f"[启动] cad_dialog_killer 已启动 (PID: {killer_proc.pid})")
+
+                    # 验证进程是否真正运行
+                    time.sleep(0.5)
+                    if killer_proc.poll() is None:
+                        print("[验证] cad_dialog_killer 正在运行")
+                    else:
+                        print("[警告] cad_dialog_killer 意外退出")
+
+                except Exception as e:
+                    print(f"[警告] cad_dialog_killer 启动失败: {e}")
 
             return proc
         except Exception as e:
@@ -793,25 +806,65 @@ def jingchengshu_wenjian():#查看cad进程数
 
     return  found_process_i 
     
-def close_all_cad_processes():#关闭所有进程
+def close_all_cad_processes():#关闭所有进程（使用taskkill强制终止）
+    """
+    强制关闭所有CAD进程
+    使用系统taskkill命令确保即使有弹窗也能关闭
+    返回: True表示成功，False表示失败
+    """
+    import subprocess
+
     max_retries = 3
     for attempt in range(max_retries):
-        success = True
-        for process in psutil.process_iter(['pid', 'name']):
-            if process.info['name'] == "acad.exe":
-                try:
-                    process.kill()
-                    time.sleep(2)
-                except Exception as e:
-                    print(f"尝试关闭 CAD 进程失败: {e}")
-                    success = False
-                    break
-        if success:
-            return
-        else:
-            print(f"关闭 CAD 进程失败，正在重试... 尝试次数: {attempt + 1}")
+        try:
+            # 检查当前CAD进程数
+            process_count = jingchengshu_wenjian()
+            if process_count == 0:
+                print("[信息] 没有CAD进程需要关闭")
+                return True
+
+            print(f"[清理] 检测到 {process_count} 个CAD进程，正在强制关闭...")
+
+            # 使用taskkill强制终止所有acad.exe
+            result = subprocess.run(
+                ["taskkill", "/F", "/IM", "acad.exe"],
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+
+            # 检查返回码
+            if result.returncode == 0:
+                print("[成功] CAD进程已关闭")
+                time.sleep(2)
+
+                # 验证是否真正关闭
+                process_count_after = jingchengshu_wenjian()
+                if process_count_after == 0:
+                    print("[验证] 所有CAD进程已成功关闭")
+                    return True
+                else:
+                    print(f"[警告] 仍有 {process_count_after} 个CAD进程未关闭")
+
+            elif result.returncode == 128:
+                # 没有找到进程（已经关闭）
+                print("[信息] 没有CAD进程需要关闭")
+                return True
+            else:
+                print(f"[警告] taskkill 返回码: {result.returncode}")
+                print(f"[输出] {result.stdout}")
+
+        except subprocess.TimeoutExpired:
+            print(f"[错误] 第 {attempt + 1} 次关闭超时")
+        except Exception as e:
+            print(f"[错误] 第 {attempt + 1} 次关闭失败: {e}")
+
+        if attempt < max_retries - 1:
+            print(f"[重试] 等待 2 秒后重试...")
             time.sleep(2)
-    print("多次尝试关闭 CAD 进程失败，请检查系统。")
+
+    print("[失败] 多次尝试关闭CAD进程失败，请手动检查")
+    return False
     
 def close_oldest_cad_process(process_name="acad.exe"):#关闭上一个进程
     cad_processes = [p for p in psutil.process_iter(['pid', 'name', 'create_time']) if p.info['name'] == process_name]
@@ -12950,12 +13003,16 @@ def get_doc_by_name(name): #从文件名获取文件对象
     通过文件名获取 AutoCAD 文档对象，例如 '空白.dwg'
     如果未找到，返回 None
     """
+    import win32com.client
+    acad = win32com.client.GetActiveObject("AutoCAD.Application")
     for doc in acad.Documents:
         if doc.Name.lower() == name.lower():
             return doc
     return None
 
 def get_open_document_names():#返回所有打开的文件名
+    import win32com.client
+    acad = win32com.client.GetActiveObject("AutoCAD.Application")
     return [doc.Name for doc in acad.Documents]
 
 

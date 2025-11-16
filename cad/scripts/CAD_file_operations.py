@@ -57,7 +57,13 @@ CAD四个核心状态
 ================================================================================
 """
 
+import sys
 from pathlib import Path
+
+# 添加system路径以导入CAD_basic_operations
+SYSTEM_DIR = Path(__file__).parent.parent / "system"
+sys.path.insert(0, str(SYSTEM_DIR))
+
 from CAD_basic_operations import (
     new_dwg_enhanced,
     open_dwg_paradigm,
@@ -66,12 +72,12 @@ from CAD_basic_operations import (
     save_current_dwg_paradigm,
     save_as_dwg_paradigm,
     insert_dwg_as_block_paradigm,
-    insert_and_explode_paradigm,
-    li(),
-
+    insert_and_explode_paradigm
 )
-# 对象属性访问函数（可从CAD_basic直接导入使用）
-# from CAD_basic import cast_object, get_object_property, set_object_property
+
+# 导入CAD_basic的所有函数
+sys.path.insert(0, str(Path(__file__).parent))
+from CAD_basic import *
 
 # ============================================================================
 # 文件新建与打开
@@ -400,6 +406,13 @@ def insert_region_from_file(source_file, x1, y1, x2, y2, x3, y3, explode=True):
     """
     将源文件中指定区域的对象插入到当前文件
 
+    新方案：通过临时副本文件实现，避免剪贴板问题
+
+    步骤：
+    1. 打开源文件，复制副本，删除区域外的对象
+    2. 将保留的对象移动到目标位置，保存副本
+    3. 使用copy_file_content_pywin32将副本插入到当前文件
+
     Args:
         source_file: 源文件路径
         x1, y1: 区域左下角坐标
@@ -414,209 +427,380 @@ def insert_region_from_file(source_file, x1, y1, x2, y2, x3, y3, explode=True):
     import win32com.client
     import pythoncom
     import time
+    import tempfile
     sys.path.append(str(Path(__file__).parent))
-    from CAD_basic import li
-    from CAD_coordination import wait_quiescent
+    from CAD_basic import li, select_entities_in_window
+    from CAD_coordination import wait_quiescent, send_cmd_with_sync
     import win32com.client
 
+    print(f"\n[开始] insert_region_from_file (新方案)")
+    print(f"  源文件: {source_file}")
+    print(f"  区域: ({x1},{y1}) -> ({x2},{y2})")
+    print(f"  目标位置: ({x3},{y3})")
+
+    temp_file = None
+
     try:
-        # 打开源文件
-        if not open_file(source_file):
-            return False
-        wait_quiescent(min_quiet=0.5, timeout=15.0)
-
-        # 连接当前激活文件
-        li()
-        acad = win32com.client.GetActiveObject("AutoCAD.Application")
-        doc = acad.ActiveDocument
-
         # 规范化矩形坐标
         x_lo, x_hi = (x1, x2) if x1 < x2 else (x2, x1)
         y_lo, y_hi = (y1, y2) if y1 < y2 else (y2, y1)
+        print(f"[准备] 规范化区域坐标: ({x_lo},{y_lo}) -> ({x_hi},{y_hi})")
 
-        # 创建选择集
-        try:
-            doc.SelectionSets.Item("TempRegion").Delete()
-        except:
-            pass
-        sset = doc.SelectionSets.Add("TempRegion")
-
-        # 选择窗口内对象
-        p1 = win32com.client.VARIANT(pythoncom.VT_ARRAY | pythoncom.VT_R8, [x_lo, y_lo, 0])
-        p2 = win32com.client.VARIANT(pythoncom.VT_ARRAY | pythoncom.VT_R8, [x_hi, y_hi, 0])
-
-        for _ in range(5):
-            try:
-                sset.Clear()
-                sset.Select(1, p1, p2)  # 1 = Window
-                if sset.Count > 0:
-                    break
-            except:
-                pass
-            time.sleep(0.25)
-
-        if sset.Count == 0:
-            print(f"[警告] 区域内没有对象")
-            sset.Delete()
-            close_file("no_save")
+        # 步骤1: 打开源文件，复制副本，保留区域内对象
+        print(f"\n[步骤1] 打开源文件并创建副本...")
+        if not open_file(source_file):
+            print(f"[错误] 打开源文件失败: {source_file}")
             return False
-
-        print(f"[成功] 选中 {sset.Count} 个对象")
-
-        # 计算偏移量
-        offset_x = x3 - x_lo
-        offset_y = y3 - y_lo
-
-        # 使用CopyObjects复制到当前文档
-        from CAD_coordination import send_cmd_with_sync
-
-        # 复制选中的对象到剪贴板
-        send_cmd_with_sync("_COPYCLIP\n", wait_after=1.0)
-
-        # 删除选择集
-        sset.Delete()
-
-        # 关闭源文件
-        close_file("no_save")
+        print(f"[成功] 源文件已打开")
         wait_quiescent(min_quiet=0.5, timeout=15.0)
 
-        # 粘贴到当前文件的目标位置
-        paste_cmd = f"_PASTECLIP\n{x3},{y3}\n"
-        send_cmd_with_sync(paste_cmd, wait_after=2.0)
+        # 创建临时副本文件
+        temp_dir = Path(tempfile.gettempdir())
+        temp_file = temp_dir / f"region_temp_{int(time.time())}.dwg"
+        print(f"[副本] 创建临时文件: {temp_file}")
 
-        print(f"[成功] 已插入区域对象到 ({x3},{y3})")
+        if not save_file_as(str(temp_file)):
+            print(f"[错误] 创建副本失败")
+            close_file("no_save")
+            return False
+        print(f"[成功] 副本已创建: {temp_file}")
+
+        # 选择区域内对象，记录Handle
+        print(f"\n[步骤1.1] 选择区域内对象...")
+        entities = select_entities_in_window(x_lo, y_lo, x_hi, y_hi, ty=1.0, select_mode="_W")
+
+        if not entities or len(entities) == 0:
+            print(f"[警告] 区域内没有对象")
+            close_file("no_save")
+            if temp_file.exists():
+                temp_file.unlink()
+            return False
+
+        print(f"[成功] 选中 {len(entities)} 个对象")
+
+        # 记录要保留的对象的Handle
+        keep_handles = set()
+        for ent in entities:
+            try:
+                keep_handles.add(ent.Handle)
+            except:
+                pass
+        print(f"[记录] 保留 {len(keep_handles)} 个对象的Handle")
+
+        # 删除区域外的对象
+        print(f"\n[步骤1.2] 删除区域外的对象...")
+        li()
+        acad = win32com.client.GetActiveObject("AutoCAD.Application")
+        doc = acad.ActiveDocument
+        model_space = doc.ModelSpace
+
+        delete_count = 0
+        for obj in model_space:
+            try:
+                if obj.Handle not in keep_handles:
+                    obj.Delete()
+                    delete_count += 1
+            except:
+                pass
+
+        print(f"[成功] 删除了 {delete_count} 个区域外对象")
+        wait_quiescent(min_quiet=0.5, timeout=15.0)
+
+        # 步骤2: 移动保留的对象到目标位置
+        print(f"\n[步骤2] 移动对象到目标位置...")
+
+        # 计算移动向量：从区域左下角到目标位置
+        offset_x = x3 - x_lo
+        offset_y = y3 - y_lo
+        print(f"[计算] 移动向量: ({offset_x}, {offset_y})")
+
+        # 使用MOVE命令移动对象
+        # 先全选（因为只剩下需要的对象）
+        select_all_cmd = "_SELECT\n_ALL\n\n"
+        if not send_cmd_with_sync(select_all_cmd, wait_after=0.5, timeout=15.0):
+            print(f"[错误] 全选命令失败")
+            close_file("no_save")
+            if temp_file.exists():
+                temp_file.unlink()
+            return False
+
+        # 移动命令：基点是区域左下角，目标点是插入位置
+        move_cmd = f"_MOVE\n{x_lo},{y_lo}\n{x3},{y3}\n"
+        if not send_cmd_with_sync(move_cmd, wait_after=1.0, timeout=30.0):
+            print(f"[错误] 移动命令失败")
+            close_file("no_save")
+            if temp_file.exists():
+                temp_file.unlink()
+            return False
+
+        print(f"[成功] 对象已移动到目标位置")
+        wait_quiescent(min_quiet=0.5, timeout=15.0)
+
+        # 保存副本文件
+        print(f"\n[步骤2.1] 保存副本文件...")
+        if not save_file():
+            print(f"[错误] 保存副本失败")
+            close_file("no_save")
+            if temp_file.exists():
+                temp_file.unlink()
+            return False
+        print(f"[成功] 副本已保存: {temp_file}")
+
+        # 关闭副本文件
+        close_cmd = "_CLOSE\nN\n"
+        send_cmd_with_sync(close_cmd, wait_after=0.5, timeout=15.0)
+        wait_quiescent(min_quiet=0.5, timeout=15.0)
+        print(f"[成功] 副本文件已关闭")
+
+        # 步骤3: 使用copy_file_content_pywin32插入副本到当前文件
+        print(f"\n[步骤3] 将副本插入到当前激活文件...")
+
+        # 获取当前激活文件路径
+        li()
+        acad = win32com.client.GetActiveObject("AutoCAD.Application")
+        current_doc = acad.ActiveDocument
+        current_file = current_doc.FullName
+        print(f"[当前] 激活文件: {current_file}")
+
+        # 使用成熟的copy_file_content_pywin32函数
+        if not copy_file_content_pywin32(str(temp_file), current_file):
+            print(f"[错误] 插入副本失败")
+            if temp_file.exists():
+                temp_file.unlink()
+            return False
+
+        print(f"[成功] 副本已插入到当前文件")
+
+        # 清理临时文件
+        print(f"\n[清理] 删除临时文件...")
+        if temp_file and temp_file.exists():
+            try:
+                temp_file.unlink()
+                print(f"[成功] 临时文件已删除")
+            except Exception as e:
+                print(f"[警告] 删除临时文件失败: {e}")
+
+        print(f"\n[完成] insert_region_from_file 执行成功")
         return True
 
     except Exception as e:
-        print(f"[错误] 区域插入失败: {e}")
+        print(f"\n[错误] 区域插入失败: {e}")
+        import traceback
+        traceback.print_exc()
+
+        # 清理临时文件
+        if temp_file and temp_file.exists():
+            try:
+                temp_file.unlink()
+            except:
+                pass
+
+        # 尝试清理
+        try:
+            close_cmd = "_CLOSE\nN\n"
+            send_cmd_with_sync(close_cmd, wait_after=0.5, timeout=10.0)
+        except:
+            pass
+
         return False
 
-# ============================================================================
-# 完整工作流
-# ============================================================================
-
-def copy_file_content(source_file, target_file, explode=True, x=0, y=0):
+def insert_region_between_files(source_file, target_file, x1, y1, x2, y2, x3, y3, explode=True):
     """
-    将源文件内容拷贝到目标文件（使用pywin32方法，更可靠）
+    直接将文件B的x1,y1,x2,y2区域的图形对象插入到文件A的指定点x3,y3
+
+    这是insert_region_from_file的扩展版本，不需要先打开目标文件
+
+    步骤：
+    1. 打开源文件，复制副本，删除区域外的对象
+    2. 将保留的对象移动到目标位置，保存副本
+    3. 将副本内容插入到目标文件
 
     Args:
-        source_file: 源文件路径
-        target_file: 目标文件路径
-        explode: True=炸开（默认）, False=保持为块
-        x, y: 插入位置偏移量（相对于原位0,0）
+        source_file: 源文件路径（文件B）
+        target_file: 目标文件路径（文件A）
+        x1, y1: 区域左下角坐标
+        x2, y2: 区域右上角坐标
+        x3, y3: 目标位置(对应区域左下角)
+        explode: 是否炸开(默认True)
 
     Returns:
         bool: 成功返回True
     """
-    import win32com.client
-    import pythoncom
-    import time
     import sys
+    import win32com.client
+    import time
+    import tempfile
     sys.path.append(str(Path(__file__).parent))
-    from CAD_coordination import wait_quiescent
+    from CAD_basic import li, select_entities_in_window
+    from CAD_coordination import wait_quiescent, send_cmd_with_sync
+
+    print(f"\n[开始] insert_region_between_files")
+    print(f"  源文件: {source_file}")
+    print(f"  目标文件: {target_file}")
+    print(f"  区域: ({x1},{y1}) -> ({x2},{y2})")
+    print(f"  目标位置: ({x3},{y3})")
+
+    temp_file = None
 
     try:
-        acad = win32com.client.GetActiveObject("AutoCAD.Application")
+        # 规范化矩形坐标
+        x_lo, x_hi = (x1, x2) if x1 < x2 else (x2, x1)
+        y_lo, y_hi = (y1, y2) if y1 < y2 else (y2, y1)
+        print(f"[准备] 规范化区域坐标: ({x_lo},{y_lo}) -> ({x_hi},{y_hi})")
 
-        # 等待CAD完全空闲
-        wait_quiescent(min_quiet=1.0, timeout=15.0)
+        # 步骤1: 打开源文件，复制副本，保留区域内对象
+        print(f"\n[步骤1] 打开源文件并创建副本...")
+        if not open_file(source_file):
+            print(f"[错误] 打开源文件失败: {source_file}")
+            return False
+        print(f"[成功] 源文件已打开")
+        wait_quiescent(min_quiet=0.5, timeout=15.0)
 
-        # 解析路径
-        source_path = str(Path(source_file).resolve())
-        target_path = str(Path(target_file).resolve())
+        # 创建临时副本文件
+        temp_dir = Path(tempfile.gettempdir())
+        temp_file = temp_dir / f"region_temp_{int(time.time())}.dwg"
+        print(f"[副本] 创建临时文件: {temp_file}")
 
-        # 如果目标文件不存在，创建它
-        if not Path(target_file).exists():
-            print(f"[创建] 目标文件不存在，正在创建...")
-            if not new_file(target_file):
-                return False
+        if not save_file_as(str(temp_file)):
+            print(f"[错误] 创建副本失败")
+            close_file("no_save")
+            return False
+        print(f"[成功] 副本已创建: {temp_file}")
 
-        print(f"[信息] 源文件: {source_path}")
-        print(f"[信息] 目标文件: {target_path}")
+        # 选择区域内对象，记录Handle
+        print(f"\n[步骤1.1] 选择区域内对象...")
+        entities = select_entities_in_window(x_lo, y_lo, x_hi, y_hi, ty=1.0, select_mode="_W")
 
-        # 打开源文件
-        print(f"[打开] 源文件...")
-        source_doc = acad.Documents.Open(source_path)
-        time.sleep(3)
+        if not entities or len(entities) == 0:
+            print(f"[警告] 区域内没有对象")
+            close_file("no_save")
+            if temp_file.exists():
+                temp_file.unlink()
+            return False
 
-        # 获取源文件的所有对象
-        source_ms = source_doc.ModelSpace
-        objects_count = source_ms.Count
-        print(f"[信息] 源文件共有 {objects_count} 个对象")
+        print(f"[成功] 选中 {len(entities)} 个对象")
 
-        # 创建对象列表
-        objects_to_copy = []
-        for i in range(objects_count):
+        # 记录要保留的对象的Handle
+        keep_handles = set()
+        for ent in entities:
             try:
-                obj = source_ms.Item(i)
-                objects_to_copy.append(obj)
+                keep_handles.add(ent.Handle)
+            except:
+                pass
+        print(f"[记录] 保留 {len(keep_handles)} 个对象的Handle")
+
+        # 删除区域外的对象
+        print(f"\n[步骤1.2] 删除区域外的对象...")
+        li()
+        acad = win32com.client.GetActiveObject("AutoCAD.Application")
+        doc = acad.ActiveDocument
+        model_space = doc.ModelSpace
+
+        delete_count = 0
+        for obj in model_space:
+            try:
+                if obj.Handle not in keep_handles:
+                    obj.Delete()
+                    delete_count += 1
             except:
                 pass
 
-        print(f"[信息] 准备复制 {len(objects_to_copy)} 个对象")
+        print(f"[成功] 删除了 {delete_count} 个区域外对象")
+        wait_quiescent(min_quiet=0.5, timeout=15.0)
 
-        # 打开目标文件
-        print(f"[打开] 目标文件...")
-        time.sleep(2)
-        target_doc = acad.Documents.Open(target_path)
-        time.sleep(3)
+        # 步骤2: 移动保留的对象到目标位置
+        print(f"\n[步骤2] 移动对象到目标位置...")
 
-        # 获取目标ModelSpace
-        target_ms = target_doc.ModelSpace
+        # 计算移动向量：从区域左下角到目标位置
+        offset_x = x3 - x_lo
+        offset_y = y3 - y_lo
+        print(f"[计算] 移动向量: ({offset_x}, {offset_y})")
 
-        # 准备对象数组
-        obj_array = win32com.client.VARIANT(pythoncom.VT_ARRAY | pythoncom.VT_DISPATCH, objects_to_copy)
+        # 使用MOVE命令移动对象
+        # 先全选（因为只剩下需要的对象）
+        select_all_cmd = "_SELECT\n_ALL\n\n"
+        if not send_cmd_with_sync(select_all_cmd, wait_after=0.5, timeout=15.0):
+            print(f"[错误] 全选命令失败")
+            close_file("no_save")
+            if temp_file.exists():
+                temp_file.unlink()
+            return False
 
-        # 复制对象从源文档到目标文档
-        print(f"[复制] 正在复制对象...")
-        id_pairs = source_doc.CopyObjects(obj_array, target_ms)
-        print(f"[成功] 对象已复制")
+        # 移动命令：基点是区域左下角，目标点是插入位置
+        move_cmd = f"_MOVE\n{x_lo},{y_lo}\n{x3},{y3}\n"
+        if not send_cmd_with_sync(move_cmd, wait_after=1.0, timeout=30.0):
+            print(f"[错误] 移动命令失败")
+            close_file("no_save")
+            if temp_file.exists():
+                temp_file.unlink()
+            return False
 
-        # 关闭源文件（不保存）
-        source_doc.Close(False)
-        print(f"[关闭] 源文件")
+        print(f"[成功] 对象已移动到目标位置")
+        wait_quiescent(min_quiet=0.5, timeout=15.0)
 
-        # 如果需要炸开块引用
-        if explode:
-            print(f"[检查] 查找块引用...")
-            blocks_to_explode = []
-            for i in range(target_ms.Count):
-                try:
-                    obj = target_ms.Item(i)
-                    if obj.ObjectName == "AcDbBlockReference":
-                        blocks_to_explode.append(obj)
-                except:
-                    pass
+        # 保存副本文件
+        print(f"\n[步骤2.1] 保存副本文件...")
+        if not save_file():
+            print(f"[错误] 保存副本失败")
+            close_file("no_save")
+            if temp_file.exists():
+                temp_file.unlink()
+            return False
+        print(f"[成功] 副本已保存: {temp_file}")
 
-            if blocks_to_explode:
-                print(f"[炸开] 发现 {len(blocks_to_explode)} 个块，正在炸开...")
-                for block in blocks_to_explode:
-                    try:
-                        block.Explode()
-                        block.Delete()
-                    except:
-                        pass
-                print(f"[成功] 块已炸开")
+        # 关闭副本文件
+        close_cmd = "_CLOSE\nN\n"
+        send_cmd_with_sync(close_cmd, wait_after=0.5, timeout=15.0)
+        wait_quiescent(min_quiet=0.5, timeout=15.0)
+        print(f"[成功] 副本文件已关闭")
 
-        # 如果指定了偏移位置，移动所有新复制的对象
-        if x != 0 or y != 0:
-            print(f"[移动] 偏移到位置 ({x}, {y})...")
-            # 获取复制的对象（通过id_pairs）
-            # 注意：CopyObjects返回的是成对的ID，需要提取目标对象
-            # 这里简化处理：移动最近添加的对象
-            # TODO: 更精确的实现需要解析id_pairs
-            pass
+        # 步骤3: 使用copy_file_content_pywin32插入副本到目标文件
+        print(f"\n[步骤3] 将副本插入到目标文件...")
 
-        # 保存目标文件
-        target_doc.Save()
-        print(f"[保存] 目标文件")
+        # 确保目标文件路径规范化
+        target_path = str(Path(target_file).resolve())
+        print(f"[目标] 文件: {target_path}")
 
+        # 使用成熟的copy_file_content_pywin32函数
+        if not copy_file_content_pywin32(str(temp_file), target_path):
+            print(f"[错误] 插入副本失败")
+            if temp_file.exists():
+                temp_file.unlink()
+            return False
+
+        print(f"[成功] 副本已插入到目标文件")
+
+        # 清理临时文件
+        print(f"\n[清理] 删除临时文件...")
+        if temp_file and temp_file.exists():
+            try:
+                temp_file.unlink()
+                print(f"[成功] 临时文件已删除")
+            except Exception as e:
+                print(f"[警告] 删除临时文件失败: {e}")
+
+        print(f"\n[完成] insert_region_between_files 执行成功")
         return True
 
     except Exception as e:
-        print(f"[错误] {e}")
+        print(f"\n[错误] 跨文件区域插入失败: {e}")
         import traceback
         traceback.print_exc()
+
+        # 清理临时文件
+        if temp_file and temp_file.exists():
+            try:
+                temp_file.unlink()
+            except:
+                pass
+
+        # 尝试清理
+        try:
+            close_cmd = "_CLOSE\nN\n"
+            send_cmd_with_sync(close_cmd, wait_after=0.5, timeout=10.0)
+        except:
+            pass
+
         return False
 
 # ============================================================================
@@ -663,23 +847,37 @@ def draw_tarch_wall(p1, p2, thickness=240):
 
     try:
         # 发送天正墙命令
-        cmd = f"tgwall\n{p1[0]},{p1[1]}\n{p2[0]},{p2[1]}\n\n"
-        send_cmd_with_sync(cmd, wait_after=2.0)
+        cmd = f"tgwall\n{p1[0]},{p1[1]}\n{p2[0]},{p2[1]}\n\n\n"
+        send_cmd_with_sync(cmd, wait_after=1.0)
         wait_quiescent(min_quiet=0.5, timeout=10.0)
 
-        # 获取刚绘制的墙
-        time.sleep(1.0)
-        wall = last_obj()
+        # 获取刚绘制的墙，增加重试机制
+        time.sleep(1.5)
 
-        # 设置墙厚
-        try:
-            obj_name = wall.ObjectName
-            if 'Wall' in obj_name or 'TDb' in obj_name:
-                set_object_property(wall, 'Thickness', thickness)
-                print(f"[成功] 已绘制墙体，厚度{thickness}")
-                return True
-        except:
-            pass
+        for attempt in range(3):
+            try:
+                wall = last_obj()
+                obj_name = wall.ObjectName
+
+                # 检查是否是墙体对象
+                if 'Wall' in obj_name or 'TDb' in obj_name:
+                    # 设置墙厚
+                    set_object_property(wall, 'Thickness', thickness)
+                    print(f"[成功] 已绘制墙体，厚度{thickness}")
+                    return True
+                else:
+                    print(f"[警告] 对象类型不是墙体: {obj_name}")
+                    if attempt < 2:
+                        time.sleep(0.5)
+                        continue
+                    return False
+
+            except Exception as e:
+                print(f"[警告] 第{attempt+1}次获取墙体对象失败: {e}")
+                if attempt < 2:
+                    time.sleep(0.5)
+                    continue
+                raise
 
         print(f"[警告] 未找到墙体对象")
         return False
@@ -708,8 +906,8 @@ def insert_tarch_door(p, width=None, height=None):
 
     try:
         # 发送TOpening命令插入门
-        cmd = f"TOpening\n{p[0]},{p[1]}\n\n"
-        send_cmd_with_sync(cmd, wait_after=2.0)
+        cmd = f"TOpening\n{p[0]},{p[1]}\n\n\n"
+        send_cmd_with_sync(cmd, wait_after=1.0)
 
         # 获取刚插入的门对象
         time.sleep(1)
